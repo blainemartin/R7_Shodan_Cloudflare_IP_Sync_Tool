@@ -57,7 +57,4 @@ This script will orchestrate the process of fetching, comparing, and updating IP
 Contributions to this project are welcome! Please fork the repository and submit a pull request with your suggested changes.
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-
-```
+This project is licensed under the GNU license.
