@@ -1,6 +1,5 @@
 import json
 import logging
-from get_cloudflare_ips import get_cloudflare_ips
 from get_insightcloudsec_ips import get_insightcloudsec_ips
 from get_insightvm_site_contents import get_insightvm_site_contents
 from get_shodan_net_contents import get_shodan_net_contents
@@ -22,36 +21,18 @@ class StructuredLogger(logging.LoggerAdapter):
 
 logger = StructuredLogger(logging.getLogger(__name__), {})
 
-def calculate_changes(insightvm_cloudflare_site_id, insightvm_azure_aws_site_id,
-                      shodan_cloudflare_net, shodan_azure_aws_net):
+def calculate_changes(insightvm_azure_aws_site_id, shodan_azure_aws_net):
     logger.debug("Starting to calculate changes between sources and targets.")
-
-    # Retrieve current IPs from source containers
-    logger.debug("Fetching IPs from Cloudflare API.")
-    cloudflare_ips_data = get_cloudflare_ips()
-    cloudflare_ips = {ip['content'] for ip in cloudflare_ips_data['public_ips']}
-    logger.debug('Cloudflare API response received', extra={'response': cloudflare_ips_data})
 
     logger.debug("Fetching IPs from InsightCloudSec API.")
     insightcloudsec_ips_data = get_insightcloudsec_ips()
     insightcloudsec_ips = {ip['IP Address'] for ip in json.loads(insightcloudsec_ips_data)}
     logger.debug('InsightCloudSec API response received', extra={'response': insightcloudsec_ips_data})
 
-    # Retrieve current IPs from target containers
-    logger.debug("Fetching IPs from InsightVM for Cloudflare site.")
-    insightvm_cloudflare_ips_data = get_insightvm_site_contents(insightvm_cloudflare_site_id)
-    insightvm_cloudflare_ips = set(json.loads(insightvm_cloudflare_ips_data))
-    logger.debug('InsightVM Cloudflare site contents received', extra={'response': insightvm_cloudflare_ips_data})
-
     logger.debug("Fetching IPs from InsightVM for Azure/AWS site.")
     insightvm_insightcloudsec_ips_data = get_insightvm_site_contents(insightvm_azure_aws_site_id)
     insightvm_insightcloudsec_ips = set(json.loads(insightvm_insightcloudsec_ips_data))
     logger.debug('InsightVM Azure/AWS site contents received', extra={'response': insightvm_insightcloudsec_ips_data})
-
-    logger.debug("Fetching IPs from Shodan for Cloudflare network.")
-    shodan_cloudflare_ips_data = get_shodan_net_contents(shodan_cloudflare_net)
-    shodan_cloudflare_ips = set(json.loads(shodan_cloudflare_ips_data)['ip'])
-    logger.debug('Shodan Cloudflare network contents received', extra={'response': shodan_cloudflare_ips_data})
 
     logger.debug("Fetching IPs from Shodan for Azure/AWS network.")
     shodan_insightcloudsec_ips_data = get_shodan_net_contents(shodan_azure_aws_net)
@@ -59,41 +40,28 @@ def calculate_changes(insightvm_cloudflare_site_id, insightvm_azure_aws_site_id,
     logger.debug('Shodan Azure/AWS network contents received', extra={'response': shodan_insightcloudsec_ips_data})
 
     # Calculate additions and removals
-    insightvm_cloudflare_additions = cloudflare_ips - insightvm_cloudflare_ips
-    insightvm_cloudflare_removals = insightvm_cloudflare_ips - cloudflare_ips
     insightvm_insightcloudsec_additions = insightcloudsec_ips - insightvm_insightcloudsec_ips
     insightvm_insightcloudsec_removals = insightvm_insightcloudsec_ips - insightcloudsec_ips
 
     # Log results
     logger.debug("Calculated changes successfully.", extra={'changes': {
-        "insightvm_cloudflare_additions": list(insightvm_cloudflare_additions) if insightvm_cloudflare_additions else None,
-        "insightvm_cloudflare_removals": list(insightvm_cloudflare_removals) if insightvm_cloudflare_removals else None,
         "insightvm_insightcloudsec_additions": list(insightvm_insightcloudsec_additions) if insightvm_insightcloudsec_additions else None,
         "insightvm_insightcloudsec_removals": list(insightvm_insightcloudsec_removals) if insightvm_insightcloudsec_removals else None,
-        "shodan_cloudflare_ips": list(cloudflare_ips) if cloudflare_ips != shodan_cloudflare_ips else None,
-        "shodan_insightcloudsec_ips": list(insightcloudsec_ips) if insightcloudsec_ips != shodan_insightcloudsec_ips else None,
     }})
 
     return {
-        "insightvm_cloudflare_additions": list(insightvm_cloudflare_additions) if insightvm_cloudflare_additions else None,
-        "insightvm_cloudflare_removals": list(insightvm_cloudflare_removals) if insightvm_cloudflare_removals else None,
         "insightvm_insightcloudsec_additions": list(insightvm_insightcloudsec_additions) if insightvm_insightcloudsec_additions else None,
         "insightvm_insightcloudsec_removals": list(insightvm_insightcloudsec_removals) if insightvm_insightcloudsec_removals else None,
-        "shodan_cloudflare_ips": list(cloudflare_ips) if cloudflare_ips != shodan_cloudflare_ips else None,
-        "shodan_insightcloudsec_ips": list(insightcloudsec_ips) if insightcloudsec_ips != shodan_insightcloudsec_ips else None,
     }
 
 if __name__ == '__main__':
     # Example identifiers for network names and site IDs
-    SHODAN_CLOUDFLARE_NET = "Cloud Public IPs (Cloudflare)"
     SHODAN_AZURE_AWS_NET = "Cloud Public IPs (Azure&AWS)"
-    INSIGHTVM_CLOUDFLARE_SITE_ID = "201"
     INSIGHTVM_AZURE_AWS_SITE_ID = "200"
 
     # Call the function with the specified identifiers
     try:
-        changes = calculate_changes(INSIGHTVM_CLOUDFLARE_SITE_ID, INSIGHTVM_AZURE_AWS_SITE_ID,
-                                    SHODAN_CLOUDFLARE_NET, SHODAN_AZURE_AWS_NET)
+        changes = calculate_changes(INSIGHTVM_AZURE_AWS_SITE_ID, SHODAN_AZURE_AWS_NET)
         logger.debug('Calculated changes successfully', extra={'changes': changes})
     except Exception as e:
         logger.error('Failed to calculate changes', extra={'error': str(e)})

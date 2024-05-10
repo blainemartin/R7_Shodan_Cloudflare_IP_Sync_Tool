@@ -20,13 +20,10 @@ if not isinstance(numeric_level, int):
 logging.basicConfig(level=numeric_level, format='[%(levelname)s] %(asctime)s, %(message)s', datefmt='%m/%d/%Y %H:%M:%S')
 
 # Environment variables for network names and site IDs  
-SHODAN_CLOUDFLARE_NET = get_env_variable('SHODAN_CLOUDFLARE_NET')  
 SHODAN_AZURE_AWS_NET = get_env_variable('SHODAN_AZURE_AWS_NET')  
-INSIGHTVM_CLOUDFLARE_SITE_ID = get_env_variable('INSIGHTVM_CLOUDFLARE_SITE_ID')  
 INSIGHTVM_AZURE_AWS_SITE_ID = get_env_variable('INSIGHTVM_AZURE_AWS_SITE_ID')  
   
-changes = calculate_changes(INSIGHTVM_CLOUDFLARE_SITE_ID, INSIGHTVM_AZURE_AWS_SITE_ID,   
-                            SHODAN_CLOUDFLARE_NET, SHODAN_AZURE_AWS_NET)  
+changes = calculate_changes(INSIGHTVM_AZURE_AWS_SITE_ID, SHODAN_AZURE_AWS_NET)  
 
 def log_result(ip, target_location, action, result):
     if 'status' in result and result['status'] == 'success':
@@ -40,10 +37,7 @@ def log_result(ip, target_location, action, result):
 def implement_changes():
     successes = 0
     failures = 0
-
     for change_key, site_id, action in [
-        ('insightvm_cloudflare_additions', INSIGHTVM_CLOUDFLARE_SITE_ID, "Addition"),
-        ('insightvm_cloudflare_removals', INSIGHTVM_CLOUDFLARE_SITE_ID, "Removal"),
         ('insightvm_insightcloudsec_additions', INSIGHTVM_AZURE_AWS_SITE_ID, "Addition"),
         ('insightvm_insightcloudsec_removals', INSIGHTVM_AZURE_AWS_SITE_ID, "Removal"),
     ]:
@@ -51,31 +45,11 @@ def implement_changes():
             func = add_ips_to_insightvm_site if action == "Addition" else remove_ips_from_insightvm_site
             results = json.loads(func(changes[change_key], site_id))
             for result in results:
-                if isinstance(result, dict):
-                    res = log_result(result.get('ip'), f"InsightVM Site {site_id}", action, result)
-                    if res == 'Success':
-                        successes += 1
-                    else:
-                        failures += 1
+                if result['status'] == 'success':
+                    logging.info(f"{result['ip']}, InsightVM Site {site_id}, {action}, Success")
+                    successes += 1
                 else:
-                    logging.error(f"Unexpected result format: {result}")
-                    failures += 1
-
-    for change_key, net_name in [
-        ('shodan_cloudflare_ips', SHODAN_CLOUDFLARE_NET),
-        ('shodan_insightcloudsec_ips', SHODAN_AZURE_AWS_NET),
-    ]:
-        if changes.get(change_key):
-            replace_result = replace_ips_in_shodan_net(changes[change_key], net_name)
-            for ip in changes[change_key]:
-                if isinstance(replace_result, dict):
-                    res = log_result(ip, f"Shodan Net {net_name}", "Replacement", replace_result)
-                    if res == 'Success':
-                        successes += 1
-                    else:
-                        failures += 1
-                else:
-                    logging.error(f"Unexpected result format for replacement: {replace_result}")
+                    logging.error(f"{result['ip']}, InsightVM Site {site_id}, {action}, FAILURE, {result.get('message', 'Unknown error')}")
                     failures += 1
 
     logging.info(f"Synchronization completed with {successes} successes and {failures} failures.")
