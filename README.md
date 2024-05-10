@@ -1,16 +1,15 @@
-# IP Sync Tool for Rapid7, Shodan, and Cloudflare
+# IP Sync Tool
 
 ## Overview
-This project is designed to automate IP address management across various security platforms, including InsightVM, Shodan, Cloudflare, and InsightCloudSec. It handles the synchronization of IP lists between these platforms to ensure consistent and up-to-date IP tracking and threat management.
+The IP Sync Tool is designed to automate IP address management across various security platforms, including InsightVM, Shodan, and InsightCloudSec. By synchronizing IP lists between these platforms, it ensures consistent and up-to-date IP tracking and threat management.
 
 ## Features
-- **IP Synchronization**: Automatically adds, removes, and replaces IP addresses across different platforms based on current listings and predefined conditions.
-- **Logging**: Detailed logging for auditing and troubleshooting purposes.
+- **IP Synchronization**: Automates the process of adding, removing, and replacing IP addresses across different platforms based on current listings and predefined conditions.
+- **Logging**: Provides detailed logging for auditing and troubleshooting purposes.
 - **Error Handling**: Implements robust error handling and rate limiting strategies to ensure reliable operation.
 
 ## Dependencies
-Ensure you have Python 3.x installed on your system. You can install all required dependencies with:
-
+Ensure you have Python 3.x installed on your system. Install all required dependencies using:
 
 ```bash
 pip install -r requirements.txt
@@ -20,10 +19,6 @@ The main dependency is `requests` for making HTTP requests.
 
 ## Configuration
 Set up the necessary environment variables and configurations for each platform:
-
-### Cloudflare
-- `CLOUDFLARE_API_KEY`: Your Cloudflare API key.
-- `CLOUDFLARE_BASE_URL`: Base URL for the Cloudflare API, typically "https://api.cloudflare.com/client/v4".
 
 ### InsightCloudSec
 - `INSIGHTCLOUDSEC_API_KEY`: Your InsightCloudSec API key.
